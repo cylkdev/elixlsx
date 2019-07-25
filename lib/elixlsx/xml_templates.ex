@@ -13,6 +13,7 @@ defmodule Elixlsx.XMLTemplates do
   alias Elixlsx.Style.Font
   alias Elixlsx.Style.Fill
   alias Elixlsx.Style.BorderStyle
+  alias Elixlsx.Style.Protection
   alias Elixlsx.Sheet
 
   # TODO: the xml_text_exape functions belong into Elixlsx.Util,
@@ -371,6 +372,12 @@ defmodule Elixlsx.XMLTemplates do
     """
   end
 
+  defp xl_sheet_protection(%Sheet{protected: true}) do
+    "<sheetProtection sheet=\"1\" objects=\"1\" scenarios=\"1\"/>"
+  end
+
+  defp xl_sheet_protection(_), do: ""
+
   defp xl_sheet_rows(data, row_heights, grouping_info, wci) do
     rows =
       Enum.zip(data, 1..length(data))
@@ -633,6 +640,7 @@ defmodule Elixlsx.XMLTemplates do
       """ <>
       xl_merge_cells(sheet.merge_cells) <>
       make_data_validations(sheet.data_validations) <>
+      xl_sheet_protection(sheet) <>
       """
       <pageMargins left="0.75" right="0.75" top="1" bottom="1.0" header="0.5" footer="0.5"/>
       """ <>
@@ -760,15 +768,25 @@ defmodule Elixlsx.XMLTemplates do
             alignment ->
               {"applyAlignment=\"1\"", alignment}
           end
-      end
+        end
+
+    {apply_protection, protection_tag} =
+      case style.protection do
+        nil ->
+          {"", ""}
+
+        protection ->
+          {"applyProtection=\"1\"", "<protection #{protection_attrs(protection)}/>"}
+        end
 
     """
     <xf borderId="#{borderid}"
            fillId="#{fillid}"
            fontId="#{fontid}"
            numFmtId="#{numfmtid}"
-           xfId="0" #{apply_alignment}>
+           xfId="0" #{apply_alignment} #{apply_protection}>
       #{wrap_text_tag}
+      #{protection_tag}
     </xf>
     """
   end
@@ -822,6 +840,11 @@ defmodule Elixlsx.XMLTemplates do
         "<alignment #{attrs}/>"
     end
   end
+
+  @spec protection_attrs(Protection.t()) :: String.t()
+  defp protection_attrs(%Protection{locked: true}), do: "locked=\"1\" "
+  defp protection_attrs(%Protection{locked: false}), do: "locked=\"0\" "
+  defp protection_attrs(_), do: ""
 
   # Returns the inner content of the <CellXfs> block.
   @spec make_cellxfs(list(CellStyle.t()), WorkbookCompInfo.t()) :: String.t()

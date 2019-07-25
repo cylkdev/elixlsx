@@ -153,6 +153,16 @@ sheet7 =
   |> Sheet.set_row_height(1, 40)
   |> Sheet.insert_image(6, 6, "ladybug-3475779_640.jpg")
 
+# Sheets can be protected. Cells are locked by default but can be set to be unlocked
+# Here, A1 is editable while the sheet is protected, but B1 is not
+sheet8 =
+  %Sheet{
+    name: "Protected",
+    protected: true
+  }
+  |> Sheet.set_cell("A1", "Can be edited", locked: false)
+  |> Sheet.set_cell("B1", "Cannot be edited")
+
 Workbook.append_sheet(workbook, sheet4)
 |> Workbook.append_sheet(sheet5)
 |> Workbook.append_sheet(sheet6)
